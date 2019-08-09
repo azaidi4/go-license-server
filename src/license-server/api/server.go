@@ -18,9 +18,9 @@ func router() *mux.Router {
 		Methods(http.MethodGet).
 		HandlerFunc(indexHandler)
 
-	r.NewRoute().Path("/check").
+	r.NewRoute().Path("/validate").
 		Methods(http.MethodPost).
-		HandlerFunc(checkHandler)
+		HandlerFunc(validateHandler)
 
 	return r
 }
