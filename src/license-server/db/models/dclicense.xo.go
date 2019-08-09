@@ -13,7 +13,8 @@ type DcLicense struct {
 	ID               int       `json:"id"`                 // id
 	LicenseExpiry    time.Time `json:"license_expiry"`     // license_expiry
 	LicenseUserLimit int       `json:"license_user_limit"` // license_user_limit
-	LicenseKey       int64     `json:"license_key"`        // license_key
+	LicenseKey       string    `json:"license_key"`        // license_key
+	LicenseOrg       string    `json:"license_org"`        // license_org
 
 	// xo fields
 	_exists, _deleted bool
@@ -40,14 +41,14 @@ func (dl *DcLicense) Insert(db XODB) error {
 
 	// sql insert query, primary key provided by sequence
 	const sqlstr = `INSERT INTO public.dc_licenses (` +
-		`license_expiry, license_user_limit, license_key` +
+		`license_expiry, license_user_limit, license_key, license_org` +
 		`) VALUES (` +
-		`$1, $2, $3` +
+		`$1, $2, $3, $4` +
 		`) RETURNING id`
 
 	// run query
-	XOLog(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey)
-	err = db.QueryRow(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey).Scan(&dl.ID)
+	XOLog(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg)
+	err = db.QueryRow(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg).Scan(&dl.ID)
 	if err != nil {
 		return err
 	}
@@ -74,14 +75,14 @@ func (dl *DcLicense) Update(db XODB) error {
 
 	// sql query
 	const sqlstr = `UPDATE public.dc_licenses SET (` +
-		`license_expiry, license_user_limit, license_key` +
+		`license_expiry, license_user_limit, license_key, license_org` +
 		`) = ( ` +
-		`$1, $2, $3` +
-		`) WHERE id = $4`
+		`$1, $2, $3, $4` +
+		`) WHERE id = $5`
 
 	// run query
-	XOLog(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.ID)
-	_, err = db.Exec(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.ID)
+	XOLog(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg, dl.ID)
+	_, err = db.Exec(sqlstr, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg, dl.ID)
 	return err
 }
 
@@ -107,18 +108,18 @@ func (dl *DcLicense) Upsert(db XODB) error {
 
 	// sql query
 	const sqlstr = `INSERT INTO public.dc_licenses (` +
-		`id, license_expiry, license_user_limit, license_key` +
+		`id, license_expiry, license_user_limit, license_key, license_org` +
 		`) VALUES (` +
-		`$1, $2, $3, $4` +
+		`$1, $2, $3, $4, $5` +
 		`) ON CONFLICT (id) DO UPDATE SET (` +
-		`id, license_expiry, license_user_limit, license_key` +
+		`id, license_expiry, license_user_limit, license_key, license_org` +
 		`) = (` +
-		`EXCLUDED.id, EXCLUDED.license_expiry, EXCLUDED.license_user_limit, EXCLUDED.license_key` +
+		`EXCLUDED.id, EXCLUDED.license_expiry, EXCLUDED.license_user_limit, EXCLUDED.license_key, EXCLUDED.license_org` +
 		`)`
 
 	// run query
-	XOLog(sqlstr, dl.ID, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey)
-	_, err = db.Exec(sqlstr, dl.ID, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey)
+	XOLog(sqlstr, dl.ID, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg)
+	_, err = db.Exec(sqlstr, dl.ID, dl.LicenseExpiry, dl.LicenseUserLimit, dl.LicenseKey, dl.LicenseOrg)
 	if err != nil {
 		return err
 	}
@@ -159,6 +160,32 @@ func (dl *DcLicense) Delete(db XODB) error {
 	return nil
 }
 
+// DcLicenseByLicenseOrg retrieves a row from 'public.dc_licenses' as a DcLicense.
+//
+// Generated from index 'dc_licenses_license_org_key'.
+func DcLicenseByLicenseOrg(db XODB, licenseOrg string) (*DcLicense, error) {
+	var err error
+
+	// sql query
+	const sqlstr = `SELECT ` +
+		`id, license_expiry, license_user_limit, license_key, license_org ` +
+		`FROM public.dc_licenses ` +
+		`WHERE license_org = $1`
+
+	// run query
+	XOLog(sqlstr, licenseOrg)
+	dl := DcLicense{
+		_exists: true,
+	}
+
+	err = db.QueryRow(sqlstr, licenseOrg).Scan(&dl.ID, &dl.LicenseExpiry, &dl.LicenseUserLimit, &dl.LicenseKey, &dl.LicenseOrg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dl, nil
+}
+
 // DcLicenseByID retrieves a row from 'public.dc_licenses' as a DcLicense.
 //
 // Generated from index 'dc_licenses_pkey'.
@@ -167,7 +194,7 @@ func DcLicenseByID(db XODB, id int) (*DcLicense, error) {
 
 	// sql query
 	const sqlstr = `SELECT ` +
-		`id, license_expiry, license_user_limit, license_key ` +
+		`id, license_expiry, license_user_limit, license_key, license_org ` +
 		`FROM public.dc_licenses ` +
 		`WHERE id = $1`
 
@@ -177,7 +204,7 @@ func DcLicenseByID(db XODB, id int) (*DcLicense, error) {
 		_exists: true,
 	}
 
-	err = db.QueryRow(sqlstr, id).Scan(&dl.ID, &dl.LicenseExpiry, &dl.LicenseUserLimit, &dl.LicenseKey)
+	err = db.QueryRow(sqlstr, id).Scan(&dl.ID, &dl.LicenseExpiry, &dl.LicenseUserLimit, &dl.LicenseKey, &dl.LicenseOrg)
 	if err != nil {
 		return nil, err
 	}
