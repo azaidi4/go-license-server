@@ -11,7 +11,7 @@ import (
 	"license-server/db"
 	"license-server/db/models"
 	"license-server/utils/logger"
-	"strings"
+	"mime/multipart"
 
 	"github.com/hyperboloide/lk"
 )
@@ -46,7 +46,7 @@ func SignAndSave(license *models.DcLicense) error {
 	if err != nil {
 		return err
 	}
-	fName := strings.ToLower(license.LicenseOrg) + licensePrefix
+	fName := license.LicenseOrg + licensePrefix
 	ioutil.WriteFile(fName, signedLicenseBytes, 0444)
 
 	lkey, err := pk.ToB64String()
@@ -63,30 +63,30 @@ func SignAndSave(license *models.DcLicense) error {
 }
 
 // Verify validates the license file, ensures it hasn't been tampered
-func Verify(orgName string) bool {
-	licenseDB, err := models.DcLicenseByLicenseOrg(db.DBConn, orgName)
-	if err != nil {
-		logger.Error.Println(err)
+func Verify(orgName string, license multipart.File) bool {
+	privateKey, err := extractPrivateKey(orgName)
+	if logger.LogOnError(err) {
 		return false
 	}
-	privateKey, err := lk.PrivateKeyFromB64String(licenseDB.LicenseKey)
-	if err != nil {
-		logger.Error.Println(err)
-		return false
-	}
-
 	publicKey := privateKey.GetPublicKey()
-	fName := strings.ToLower(orgName) + licensePrefix
-	if licenseBytes, err := ioutil.ReadFile(fName); err != nil {
-		logger.Error.Println(err)
+
+	if licenseBytes, err := ioutil.ReadAll(license); logger.LogOnError(err) {
 		return false
-	} else if license, err := lk.LicenseFromBytes(licenseBytes); err != nil {
-		logger.Error.Println(err)
+	} else if license, err := lk.LicenseFromBytes(licenseBytes); logger.LogOnError(err) {
 		return false
-	} else if ok, err := license.Verify(publicKey); err != nil {
-		logger.Error.Println(err)
+	} else if ok, err := license.Verify(publicKey); logger.LogOnError(err) {
 		return false
 	} else {
 		return ok
+	}
+}
+
+func extractPrivateKey(orgName string) (*lk.PrivateKey, error) {
+	if licenseDB, err := models.DcLicenseByLicenseOrg(db.DBConn, orgName); err != nil {
+		return nil, err
+	} else if privateKey, err := lk.PrivateKeyFromB64String(licenseDB.LicenseKey); err != nil {
+		return nil, err
+	} else {
+		return privateKey, err
 	}
 }
