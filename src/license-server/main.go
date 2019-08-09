@@ -1,10 +1,7 @@
 package main
 
-import (
-	_ "license-server/db"
-	"license-server/license"
-)
+import "license-server/api"
 
 func main() {
-	println(license.Verify("Datachat"))
+	api.StartServer()
 }
