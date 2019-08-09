@@ -1,10 +1,12 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 )
 
 const (
@@ -22,9 +24,14 @@ var (
 	Error   *log.Logger
 )
 
-func LogOnError(err error) bool {
+// Return false if err is nil, otherwise log the error and return true.
+func LogOnError(err error, msgs ...interface{}) bool {
 	if err != nil {
-		Error.Println(err)
+		_, file, line, _ := runtime.Caller(1)
+		Error.Println(fmt.Sprintf("%s:%d %v", file, line, err))
+		if len(msgs) > 0 {
+			Error.Println(msgs...)
+		}
 		return true
 	}
 	return false
