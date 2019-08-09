@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"license-server/db/dbutils"
+	"license-server/utils/logger"
 
+	// Database driver for Postgres
 	_ "github.com/lib/pq"
 )
 
@@ -15,14 +16,14 @@ func startConnection() {
 	connStr := dbutils.BuildDBString()
 	DBConn, err = sql.Open("postgres", connStr)
 	if err != nil {
-		fmt.Println("ERROR: ", err)
+		logger.Error.Println(err)
 		return
 	}
 	if err = DBConn.Ping(); err != nil {
-		fmt.Println("ERROR: ", err)
+		logger.Error.Println(err)
 		return
 	}
-	fmt.Println("Connected to Database", connStr)
+	logger.Info.Println("Connected to Database", connStr)
 }
 
 func initTable() {
@@ -31,21 +32,19 @@ func initTable() {
       id SERIAL PRIMARY KEY,
       license_expiry DATE NOT NULL,
       license_user_limit INT NOT NULL,
-      license_key BIGINT NOT NULL,
-      license_org VARCHAR NOT NULL
-    );
-    `)
+      license_key VARCHAR NOT NULL,
+      license_org VARCHAR NOT NULL UNIQUE
+    );`)
 	defer init.Close()
-
 	if err != nil {
-		fmt.Println(err)
+		logger.Error.Println(err)
 		return
 	}
 	if _, err := init.Query(); err != nil {
-		fmt.Println(err)
+		logger.Error.Println(err)
 		return
 	}
-	fmt.Println("Created table dc_licenses")
+	logger.Info.Println("Created table dc_licenses")
 }
 
 func init() {

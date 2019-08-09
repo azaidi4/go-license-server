@@ -1,8 +1,8 @@
 package api
 
 import (
-	"fmt"
 	"license-server/env"
+	"license-server/utils/logger"
 	"log"
 	"net/http"
 	"os"
@@ -27,13 +27,15 @@ func router() *mux.Router {
 
 // StartServer spins up license-server
 func StartServer() {
-	r := router()
+	logger.Info.Println("Starting up License Server...")
 
+	r := router()
+	logging := handlers.LoggingHandler(os.Stdout, r)
 	server := &http.Server{
-		Handler: handlers.LoggingHandler(os.Stdout, r),
+		Handler: logging,
 		Addr:    env.Config.Server.URL,
 	}
 
-	fmt.Println("Listening to", env.Config.Server.URL)
+	logger.Info.Println("Listening to", env.Config.Server.URL)
 	log.Fatal(server.ListenAndServe())
 }

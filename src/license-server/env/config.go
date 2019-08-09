@@ -2,7 +2,7 @@ package env
 
 import (
 	"encoding/json"
-	"fmt"
+	"license-server/utils/logger"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,7 +36,7 @@ func initializeConfig() {
 
 	configFile, err := os.Open(getConfigDir())
 	if err != nil {
-		fmt.Println("Cannot locate config.json; no configuration is loaded")
+		logger.Error.Println("Cannot locate config.json; no configuration is loaded")
 	} else {
 		defer configFile.Close()
 		for _, ptr := range []interface{}{&Config.Database, &Config.Server} {
