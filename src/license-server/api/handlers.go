@@ -11,5 +11,4 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-
 }
