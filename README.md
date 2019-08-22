@@ -1,6 +1,6 @@
-# Datachat License Server 🔐 &middot; ![Status](https://img.shields.io/badge/Status-Pre--Alpha-9cf)
+# License Server 🔐 &middot; ![Status](https://img.shields.io/badge/Status-Pre--Alpha-9cf)
 
-Development repo for Datachat's license server. Based on Go.
+Go based license server.
 This README will be populated as development continues to progress. 
 
 ## Development
